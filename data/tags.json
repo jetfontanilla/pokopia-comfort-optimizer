@@ -1,0 +1,242 @@
+[
+ {
+  "id": "blocky-stuff",
+  "name": "Blocky stuff",
+  "key": "blockystuff"
+ },
+ {
+  "id": "cleanliness",
+  "name": "Cleanliness",
+  "key": "cleanliness"
+ },
+ {
+  "id": "colorful-stuff",
+  "name": "Colorful stuff",
+  "key": "colorfulstuff"
+ },
+ {
+  "id": "complicated-stuff",
+  "name": "Complicated stuff",
+  "key": "complicatedstuff"
+ },
+ {
+  "id": "construction",
+  "name": "Construction",
+  "key": "construction"
+ },
+ {
+  "id": "containers",
+  "name": "Containers",
+  "key": "containers"
+ },
+ {
+  "id": "cute-stuff",
+  "name": "Cute stuff",
+  "key": "cutestuff"
+ },
+ {
+  "id": "electronics",
+  "name": "Electronics",
+  "key": "electronics"
+ },
+ {
+  "id": "exercise",
+  "name": "Exercise",
+  "key": "exercise"
+ },
+ {
+  "id": "fabric",
+  "name": "Fabric",
+  "key": "fabric"
+ },
+ {
+  "id": "garbage",
+  "name": "Garbage",
+  "key": "garbage"
+ },
+ {
+  "id": "gatherings",
+  "name": "Gatherings",
+  "key": "gatherings"
+ },
+ {
+  "id": "glass-stuff",
+  "name": "Glass stuff",
+  "key": "glassstuff"
+ },
+ {
+  "id": "group-activities",
+  "name": "Group Activities",
+  "key": "groupactivities"
+ },
+ {
+  "id": "hard-stuff",
+  "name": "Hard stuff",
+  "key": "hardstuff"
+ },
+ {
+  "id": "healing",
+  "name": "Healing",
+  "key": "healing"
+ },
+ {
+  "id": "letters-and-words",
+  "name": "Letters and words",
+  "key": "lettersandwords"
+ },
+ {
+  "id": "looks-like-food",
+  "name": "Looks like food",
+  "key": "lookslikefood"
+ },
+ {
+  "id": "lots-of-dirt",
+  "name": "Lots of dirt",
+  "key": "lotsofdirt"
+ },
+ {
+  "id": "lots-of-fire",
+  "name": "Lots of fire",
+  "key": "lotsoffire"
+ },
+ {
+  "id": "lots-of-nature",
+  "name": "Lots of nature",
+  "key": "lotsofnature"
+ },
+ {
+  "id": "lots-of-water",
+  "name": "Lots of water",
+  "key": "lotsofwater"
+ },
+ {
+  "id": "luxury",
+  "name": "Luxury",
+  "key": "luxury"
+ },
+ {
+  "id": "metal-stuff",
+  "name": "Metal stuff",
+  "key": "metalstuff"
+ },
+ {
+  "id": "nice-breezes",
+  "name": "Nice breezes",
+  "key": "nicebreezes"
+ },
+ {
+  "id": "noisy-stuff",
+  "name": "Noisy stuff",
+  "key": "noisystuff"
+ },
+ {
+  "id": "ocean-vibes",
+  "name": "Ocean vibes",
+  "key": "oceanvibes"
+ },
+ {
+  "id": "play-spaces",
+  "name": "Play spaces",
+  "key": "playspaces"
+ },
+ {
+  "id": "pretty-flowers",
+  "name": "Pretty flowers",
+  "key": "prettyflowers"
+ },
+ {
+  "id": "rides",
+  "name": "Rides",
+  "key": "rides"
+ },
+ {
+  "id": "round-stuff",
+  "name": "Round stuff",
+  "key": "roundstuff"
+ },
+ {
+  "id": "sharp-stuff",
+  "name": "Sharp stuff",
+  "key": "sharpstuff"
+ },
+ {
+  "id": "shiny-stuff",
+  "name": "Shiny stuff",
+  "key": "shinystuff"
+ },
+ {
+  "id": "slender-objects",
+  "name": "Slender objects",
+  "key": "slenderobjects"
+ },
+ {
+  "id": "soft-stuff",
+  "name": "Soft stuff",
+  "key": "softstuff"
+ },
+ {
+  "id": "spinning-stuff",
+  "name": "Spinning stuff",
+  "key": "spinningstuff"
+ },
+ {
+  "id": "spooky-stuff",
+  "name": "Spooky stuff",
+  "key": "spookystuff"
+ },
+ {
+  "id": "stone-stuff",
+  "name": "Stone stuff",
+  "key": "stonestuff"
+ },
+ {
+  "id": "strange-stuff",
+  "name": "Strange stuff",
+  "key": "strangestuff"
+ },
+ {
+  "id": "symbols",
+  "name": "Symbols",
+  "key": "symbols"
+ },
+ {
+  "id": "watching-stuff",
+  "name": "Watching stuff",
+  "key": "watchingstuff"
+ },
+ {
+  "id": "wobbly-stuff",
+  "name": "Wobbly stuff",
+  "key": "wobblystuff"
+ },
+ {
+  "id": "wooden-stuff",
+  "name": "Wooden stuff",
+  "key": "woodenstuff"
+ },
+ {
+  "id": "sweet-flavors",
+  "name": "Sweet flavors",
+  "key": "sweetflavors"
+ },
+ {
+  "id": "sour-flavors",
+  "name": "Sour flavors",
+  "key": "sourflavors"
+ },
+ {
+  "id": "spicy-flavors",
+  "name": "Spicy flavors",
+  "key": "spicyflavors"
+ },
+ {
+  "id": "bitter-flavors",
+  "name": "Bitter flavors",
+  "key": "bitterflavors"
+ },
+ {
+  "id": "dry-flavors",
+  "name": "Dry flavors",
+  "key": "dryflavors"
+ }
+]

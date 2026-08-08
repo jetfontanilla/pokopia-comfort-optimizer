@@ -1,0 +1,5 @@
+.cache/
+__pycache__/
+
+# Scraper is kept local; only the built data and the app itself ship.
+scripts/
