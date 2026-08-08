@@ -85,15 +85,38 @@ main, .topbar, .footer { max-width: 1080px; margin: 0 auto; padding: 0 16px; }
 /* ------------------------------------------------------------ profile */
 
 .profile {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 12px;
+}
+.resident {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  padding: 14px;
   background: var(--card);
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  padding: 16px;
 }
-.profile-head { display: flex; gap: 16px; align-items: flex-start; }
-.sprite { width: 84px; height: 84px; object-fit: contain; flex: none; }
-.profile-meta h2 { margin: 0; font-size: 20px; }
+.sprite { width: 72px; height: 72px; object-fit: contain; flex: none; }
+.profile-meta { min-width: 0; flex: 1; }
+.resident-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.profile-meta h2 { margin: 0; font-size: 18px; }
 .sub { margin: 2px 0 10px; color: var(--muted); font-size: 13px; }
+
+.remove {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  font-size: 16px;
+  line-height: 1;
+  color: var(--muted);
+  background: none;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  cursor: pointer;
+}
+.remove:hover { color: #d9534f; border-color: #d9534f; }
 
 /* ----------------------------------------------------------- controls */
 
@@ -178,6 +201,22 @@ main, .topbar, .footer { max-width: 1080px; margin: 0 auto; padding: 0 16px; }
   .use-decoration { color: #6fd0e6; }
   .use-road { color: #a0a8ba; }
 }
+
+.who { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 6px; }
+.who-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 1px 8px 1px 3px;
+  color: var(--hit);
+  background: var(--hit-bg);
+  border-radius: 999px;
+}
+.who-sprite { width: 18px; height: 18px; object-fit: contain; }
+.who-miss { color: var(--muted); background: rgba(127, 140, 180, 0.12); font-weight: 400; }
+.who-miss .who-sprite { opacity: 0.4; }
 
 .taglist { display: flex; flex-wrap: wrap; gap: 4px; }
 .tag {

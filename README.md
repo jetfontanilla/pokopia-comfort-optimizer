@@ -3,6 +3,10 @@
 Search a Pokemon, see what it likes, and get the list of items that match —
 ranked by how many of its favorites each item hits.
 
+Add up to 4 Pokemon to share a house and the ranking switches to roommates:
+items that suit the most residents come first, then the ones with the most
+total hits. Each card shows who likes it and why.
+
 A static site: plain HTML, CSS, and JavaScript reading pre-built JSON files.
 No backend, no build step, no dependencies.
 

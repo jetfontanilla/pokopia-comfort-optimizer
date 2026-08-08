@@ -10,7 +10,7 @@
 <body>
 <header class="topbar">
   <h1>Pokopia Comfort Optimizer</h1>
-  <p class="tagline">Search a Pokemon to see its favorites and the items that hit them.</p>
+  <p class="tagline">Search a Pokemon to see its favorites and the items that hit them. Add up to 4 to a house and find what suits all of them.</p>
 </header>
 
 <main>
@@ -21,7 +21,7 @@
         type="text"
         autocomplete="off"
         spellcheck="false"
-        placeholder="Search a Pokemon, e.g. Bulbasaur"
+        placeholder="Add a Pokemon, e.g. Bulbasaur"
         role="combobox"
         aria-expanded="false"
         aria-controls="suggestions"
@@ -40,6 +40,15 @@
     <label class="field">
       <span>Use</span>
       <select id="use"><option value="">All</option></select>
+    </label>
+    <label class="field" id="pleasesfield" hidden>
+      <span>Suits</span>
+      <select id="pleases">
+        <option value="1">1+ of them</option>
+        <option value="2">2+ of them</option>
+        <option value="3">3+ of them</option>
+        <option value="4">all 4</option>
+      </select>
     </label>
     <label class="field">
       <span>Min. hits</span>
