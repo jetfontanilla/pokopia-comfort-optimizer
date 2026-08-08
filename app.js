@@ -7,6 +7,7 @@
     profile: document.getElementById("profile"),
     controls: document.getElementById("controls"),
     category: document.getElementById("category"),
+    use: document.getElementById("use"),
     minhits: document.getElementById("minhits"),
     matchedonly: document.getElementById("matchedonly"),
     count: document.getElementById("count"),
@@ -14,12 +15,30 @@
     empty: document.getElementById("empty")
   };
 
+  // sentinel value for the "Not listed" option of the Use filter
+  var NO_USE = "__none__";
+
   var db = { items: [], pokemon: [], tags: [], tagById: {} };
   var current = null;
   var activeIndex = -1;
   var matches = [];
 
   // ------------------------------------------------------------- loading
+
+  function fillOptions(select, field) {
+    var seen = {};
+    db.items.forEach(function (i) {
+      if (i[field]) seen[i[field]] = true;
+    });
+    Object.keys(seen)
+      .sort()
+      .forEach(function (value) {
+        var opt = document.createElement("option");
+        opt.value = value;
+        opt.textContent = value;
+        select.appendChild(opt);
+      });
+  }
 
   function loadJSON(path) {
     return fetch(path).then(function (r) {
@@ -41,18 +60,12 @@
         db.tagById[t.id] = t;
       });
 
-      var cats = {};
-      db.items.forEach(function (i) {
-        cats[i.category] = (cats[i.category] || 0) + 1;
-      });
-      Object.keys(cats)
-        .sort()
-        .forEach(function (c) {
-          var opt = document.createElement("option");
-          opt.value = c;
-          opt.textContent = c;
-          els.category.appendChild(opt);
-        });
+      fillOptions(els.category, "category");
+      fillOptions(els.use, "use");
+      var none = document.createElement("option");
+      none.value = NO_USE;
+      none.textContent = "Not listed";
+      els.use.appendChild(none);
 
       els.q.disabled = false;
       applyHash();
@@ -158,10 +171,15 @@
   function renderResults() {
     var minHits = parseInt(els.minhits.value, 10);
     var category = els.category.value;
+    var use = els.use.value;
     var matchedOnly = els.matchedonly.checked;
 
     var rows = matches.filter(function (m) {
-      return m.hits.length >= minHits && (!category || m.item.category === category);
+      if (m.hits.length < minHits) return false;
+      if (category && m.item.category !== category) return false;
+      if (use === NO_USE && m.item.use) return false;
+      if (use && use !== NO_USE && m.item.use !== use) return false;
+      return true;
     });
 
     els.count.textContent =
@@ -194,6 +212,11 @@
 
       var catRow = el("div", "card-cat");
       catRow.appendChild(el("span", "cat", m.item.category));
+      if (m.item.use) {
+        catRow.appendChild(
+          el("span", "cat cat-use use-" + m.item.use.toLowerCase(), m.item.use)
+        );
+      }
       if (m.item.dlc) catRow.appendChild(el("span", "cat cat-dlc", "Expansion"));
       body.appendChild(catRow);
 
@@ -299,7 +322,7 @@
     setTimeout(closeSuggestions, 120);
   });
 
-  [els.category, els.minhits, els.matchedonly].forEach(function (control) {
+  [els.category, els.use, els.minhits, els.matchedonly].forEach(function (control) {
     control.addEventListener("change", function () {
       if (current) renderResults();
     });

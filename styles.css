@@ -163,7 +163,21 @@ main, .topbar, .footer { max-width: 1080px; margin: 0 auto; padding: 0 16px; }
   border: 1px solid var(--line);
   border-radius: 999px;
 }
-.cat-dlc { margin-left: 4px; color: var(--accent); border-color: var(--accent); }
+.cat + .cat { margin-left: 4px; }
+.cat-dlc { color: var(--accent); border-color: var(--accent); }
+
+.cat-use { color: var(--ink); border-color: currentColor; font-weight: 600; }
+.use-relaxation { color: #7a5af0; }
+.use-toy { color: #d1651c; }
+.use-decoration { color: #1c8ea8; }
+.use-road { color: #6b7280; }
+
+@media (prefers-color-scheme: dark) {
+  .use-relaxation { color: #b6a2ff; }
+  .use-toy { color: #f0a15c; }
+  .use-decoration { color: #6fd0e6; }
+  .use-road { color: #a0a8ba; }
+}
 
 .taglist { display: flex; flex-wrap: wrap; gap: 4px; }
 .tag {

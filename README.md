@@ -24,7 +24,7 @@ To publish: push to `main` and enable GitHub Pages on `main` / root.
 | File | |
 | --- | --- |
 | `index.html`, `app.js`, `styles.css` | the whole app |
-| `data/items.json` | 1788 items — name, category, tags, icon |
+| `data/items.json` | 1788 items — name, category, use, tags, icon |
 | `data/pokemon.json` | 366 Pokemon — favorites, sprite, ideal habitat |
 | `data/tags.json` | the 48 favorite tags |
 
