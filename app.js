@@ -449,7 +449,7 @@
     els.q.value = "";
     els.q.placeholder =
       house.length >= MAX_HOUSE
-        ? "House is full — remove someone to add another"
+        ? "House is full. Remove someone to add another"
         : house.length
         ? "Add a roommate (" + house.length + "/" + MAX_HOUSE + ")"
         : "Add a Pokemon, e.g. Bulbasaur";
@@ -543,7 +543,7 @@
       tags.appendChild(el("span", "tag tag-fav", tagName(t)));
     });
     if (!item.tags.length) {
-      tags.appendChild(el("span", "tag tag-none", "No favorite tags — no Pokemon prefers it"));
+      tags.appendChild(el("span", "tag tag-none", "No favorite tags, so no Pokemon prefers it"));
     }
     meta.appendChild(tags);
 

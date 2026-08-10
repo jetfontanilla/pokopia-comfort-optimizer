@@ -1,6 +1,6 @@
 # Pokopia Comfort Optimizer
 
-Search a Pokemon, see what it likes, and get the list of items that match —
+Search a Pokemon, see what it likes, and get the list of items that match,
 ranked by how many of its favorites each item hits.
 
 Add up to 4 Pokemon to share a house and the ranking switches to roommates:
@@ -21,8 +21,8 @@ Serve the folder over HTTP and open it:
 python -m http.server 8765
 ```
 
-(Opening `index.html` directly off disk won't work — the browser blocks the
-JSON files over `file://`.)
+(Opening `index.html` directly off disk won't work, because the browser blocks
+the JSON files over `file://`.)
 
 To publish: push to `main` and enable GitHub Pages on `main` / root.
 
@@ -31,8 +31,8 @@ To publish: push to `main` and enable GitHub Pages on `main` / root.
 | File | |
 | --- | --- |
 | `index.html`, `app.js`, `styles.css` | the whole app |
-| `data/items.json` | 1681 items — name, category, use, tags, icon |
-| `data/pokemon.json` | 366 Pokemon — favorites, sprite, ideal habitat |
+| `data/items.json` | 1681 items: name, category, use, tags, icon |
+| `data/pokemon.json` | 366 Pokemon: favorites, sprite, ideal habitat |
 | `data/tags.json` | the 48 favorite tags |
 
 The data was compiled from [pokopia.gamertw.com](https://pokopia.gamertw.com/item),
