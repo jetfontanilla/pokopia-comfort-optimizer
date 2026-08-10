@@ -10,65 +10,117 @@
 <body>
 <header class="topbar">
   <h1>Pokopia Comfort Optimizer</h1>
-  <p class="tagline">Search a Pokemon to see its favorites and the items that hit them. Add up to 4 to a house and find what suits all of them.</p>
+  <p class="tagline">Match Pokemon to the items they like — in either direction.</p>
 </header>
 
+<nav class="tabs" role="tablist">
+  <button id="tab-pokemon" class="tab-btn active" role="tab" aria-selected="true" aria-controls="panel-pokemon">By Pokemon</button>
+  <button id="tab-item" class="tab-btn" role="tab" aria-selected="false" aria-controls="panel-item">By item</button>
+</nav>
+
 <main>
-  <section class="search" role="search">
-    <div class="combo">
-      <input
-        id="q"
-        type="text"
-        autocomplete="off"
-        spellcheck="false"
-        placeholder="Add a Pokemon, e.g. Bulbasaur"
-        role="combobox"
-        aria-expanded="false"
-        aria-controls="suggestions"
-        aria-autocomplete="list" />
-      <ul id="suggestions" class="suggestions" role="listbox" hidden></ul>
+  <!-- ------------------------------------------------ Pokemon -> items -->
+  <section id="panel-pokemon" role="tabpanel" aria-labelledby="tab-pokemon">
+    <p class="mode-hint">Add up to 4 Pokemon to a house. With more than one, items that suit the most residents come first.</p>
+
+    <div class="search" role="search">
+      <div class="combo">
+        <input
+          id="q"
+          type="text"
+          autocomplete="off"
+          spellcheck="false"
+          placeholder="Add a Pokemon, e.g. Bulbasaur"
+          role="combobox"
+          aria-expanded="false"
+          aria-controls="suggestions"
+          aria-autocomplete="list" />
+        <ul id="suggestions" class="suggestions" role="listbox" hidden></ul>
+      </div>
     </div>
+
+    <div id="profile" class="profile" hidden></div>
+
+    <div id="controls" class="controls" hidden>
+      <label class="field">
+        <span>Category</span>
+        <select id="category"><option value="">All</option></select>
+      </label>
+      <label class="field">
+        <span>Use</span>
+        <select id="use"><option value="">All</option></select>
+      </label>
+      <label class="field" id="pleasesfield" hidden>
+        <span>Suits</span>
+        <select id="pleases">
+          <option value="1">1+ of them</option>
+          <option value="2">2+ of them</option>
+          <option value="3">3+ of them</option>
+          <option value="4">all 4</option>
+        </select>
+      </label>
+      <label class="field">
+        <span>Min. hits</span>
+        <select id="minhits">
+          <option value="1">1+</option>
+          <option value="2">2+</option>
+          <option value="3">3+</option>
+          <option value="4">4+</option>
+        </select>
+      </label>
+      <label class="check">
+        <input id="matchedonly" type="checkbox" checked />
+        <span>Only show matched tags on each item</span>
+      </label>
+      <p id="count" class="count"></p>
+    </div>
+
+    <div id="results" class="results" aria-live="polite"></div>
+    <p id="empty" class="empty">Start typing a Pokemon name above.</p>
   </section>
 
-  <section id="profile" class="profile" hidden></section>
+  <!-- ------------------------------------------------ item -> Pokemon -->
+  <section id="panel-item" role="tabpanel" aria-labelledby="tab-item" hidden>
+    <p class="mode-hint">Pick an item to see which Pokemon like it, ranked by how many of their favorites it hits.</p>
 
-  <section id="controls" class="controls" hidden>
-    <label class="field">
-      <span>Category</span>
-      <select id="category"><option value="">All</option></select>
-    </label>
-    <label class="field">
-      <span>Use</span>
-      <select id="use"><option value="">All</option></select>
-    </label>
-    <label class="field" id="pleasesfield" hidden>
-      <span>Suits</span>
-      <select id="pleases">
-        <option value="1">1+ of them</option>
-        <option value="2">2+ of them</option>
-        <option value="3">3+ of them</option>
-        <option value="4">all 4</option>
-      </select>
-    </label>
-    <label class="field">
-      <span>Min. hits</span>
-      <select id="minhits">
-        <option value="1">1+</option>
-        <option value="2">2+</option>
-        <option value="3">3+</option>
-        <option value="4">4+</option>
-      </select>
-    </label>
-    <label class="check">
-      <input id="matchedonly" type="checkbox" checked />
-      <span>Only show matched tags on each item</span>
-    </label>
-    <p id="count" class="count"></p>
+    <div class="search" role="search">
+      <div class="combo">
+        <input
+          id="iq"
+          type="text"
+          autocomplete="off"
+          spellcheck="false"
+          placeholder="Search an item, e.g. Cute sofa"
+          role="combobox"
+          aria-expanded="false"
+          aria-controls="isuggestions"
+          aria-autocomplete="list" />
+        <ul id="isuggestions" class="suggestions" role="listbox" hidden></ul>
+      </div>
+    </div>
+
+    <div id="itemprofile" class="profile" hidden></div>
+
+    <div id="icontrols" class="controls" hidden>
+      <label class="field">
+        <span>Ideal habitat</span>
+        <select id="habitat"><option value="">All</option></select>
+      </label>
+      <label class="field">
+        <span>Min. hits</span>
+        <select id="iminhits">
+          <option value="1">1+</option>
+          <option value="2">2+</option>
+          <option value="3">3+</option>
+          <option value="4">4+</option>
+        </select>
+      </label>
+      <p id="icount" class="count"></p>
+    </div>
+
+    <div id="iresults" class="results" aria-live="polite"></div>
+    <p id="iempty" class="empty">Start typing an item name above.</p>
   </section>
-
-  <section id="results" class="results" aria-live="polite"></section>
-
-  <p id="empty" class="empty">Start typing a Pokemon name above.</p>
 </main>
 
 <footer class="footer">

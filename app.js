@@ -2,6 +2,11 @@
   "use strict";
 
   var els = {
+    tabPokemon: document.getElementById("tab-pokemon"),
+    tabItem: document.getElementById("tab-item"),
+    panelPokemon: document.getElementById("panel-pokemon"),
+    panelItem: document.getElementById("panel-item"),
+
     q: document.getElementById("q"),
     suggestions: document.getElementById("suggestions"),
     profile: document.getElementById("profile"),
@@ -14,7 +19,17 @@
     matchedonly: document.getElementById("matchedonly"),
     count: document.getElementById("count"),
     results: document.getElementById("results"),
-    empty: document.getElementById("empty")
+    empty: document.getElementById("empty"),
+
+    iq: document.getElementById("iq"),
+    isuggestions: document.getElementById("isuggestions"),
+    itemProfile: document.getElementById("itemprofile"),
+    icontrols: document.getElementById("icontrols"),
+    habitat: document.getElementById("habitat"),
+    iminhits: document.getElementById("iminhits"),
+    icount: document.getElementById("icount"),
+    iresults: document.getElementById("iresults"),
+    iempty: document.getElementById("iempty")
   };
 
   // sentinel value for the "Not listed" option of the Use filter
@@ -23,15 +38,16 @@
 
   var db = { items: [], pokemon: [], tags: [], tagById: {} };
   var house = [];
-  var activeIndex = -1;
   var matches = [];
+  var currentItem = null;
+  var itemMatches = [];
 
   // ------------------------------------------------------------- loading
 
-  function fillOptions(select, field) {
+  function fillOptions(select, rows, field) {
     var seen = {};
-    db.items.forEach(function (i) {
-      if (i[field]) seen[i[field]] = true;
+    rows.forEach(function (r) {
+      if (r[field]) seen[r[field]] = true;
     });
     Object.keys(seen)
       .sort()
@@ -63,44 +79,163 @@
         db.tagById[t.id] = t;
       });
 
-      fillOptions(els.category, "category");
-      fillOptions(els.use, "use");
+      fillOptions(els.category, db.items, "category");
+      fillOptions(els.use, db.items, "use");
       var none = document.createElement("option");
       none.value = NO_USE;
       none.textContent = "Not listed";
       els.use.appendChild(none);
+      fillOptions(els.habitat, db.pokemon, "idealHabitat");
 
       els.q.disabled = false;
+      els.iq.disabled = false;
       applyHash();
     })
     .catch(function (err) {
       els.empty.textContent = "Could not load data: " + err.message;
     });
 
-  // ------------------------------------------------------------ matching
+  // ------------------------------------------------------------- helpers
 
   function normalize(s) {
     return s.toLowerCase().replace(/[^a-z0-9]/g, "");
   }
 
-  function inHouse(pokemon) {
-    return house.some(function (p) {
-      return p.name === pokemon.name;
-    });
-  }
-
-  function searchPokemon(query) {
+  /** Prefix matches first, then substring matches. */
+  function search(rows, query, exclude) {
     var q = normalize(query);
     if (!q) return [];
     var starts = [];
     var contains = [];
-    db.pokemon.forEach(function (p) {
-      if (inHouse(p)) return;
-      var n = normalize(p.name);
-      if (n.indexOf(q) === 0) starts.push(p);
-      else if (n.indexOf(q) !== -1) contains.push(p);
+    rows.forEach(function (r) {
+      if (exclude && exclude(r)) return;
+      var n = normalize(r.name);
+      if (n.indexOf(q) === 0) starts.push(r);
+      else if (n.indexOf(q) !== -1) contains.push(r);
     });
     return starts.concat(contains).slice(0, 10);
+  }
+
+  function tagName(id) {
+    return db.tagById[id] ? db.tagById[id].name : id;
+  }
+
+  function el(tag, className, text) {
+    var node = document.createElement(tag);
+    if (className) node.className = className;
+    if (text != null) node.textContent = text;
+    return node;
+  }
+
+  function image(src, className) {
+    if (!src) return null;
+    var img = el("img", className);
+    img.src = src;
+    img.alt = "";
+    img.loading = "lazy";
+    img.onerror = function () {
+      img.remove();
+    };
+    return img;
+  }
+
+  function habitatBadge(pokemon) {
+    if (!pokemon.idealHabitat) return null;
+    return el(
+      "span",
+      "habitat habitat-" + pokemon.idealHabitat.toLowerCase(),
+      pokemon.idealHabitat
+    );
+  }
+
+  function categoryRow(item) {
+    var row = el("div", "card-cat");
+    row.appendChild(el("span", "cat", item.category));
+    (item.alsoIn || []).forEach(function (c) {
+      row.appendChild(el("span", "cat", c));
+    });
+    if (item.use) {
+      row.appendChild(el("span", "cat cat-use use-" + item.use.toLowerCase(), item.use));
+    }
+    if (item.dlc) row.appendChild(el("span", "cat cat-dlc", "Expansion"));
+    return row;
+  }
+
+  /**
+   * Wire an input + listbox as a combobox. `onPick` receives the chosen row.
+   */
+  function combobox(input, list, getRows, renderRow, onPick) {
+    var activeIndex = -1;
+
+    function close() {
+      list.hidden = true;
+      list.innerHTML = "";
+      input.setAttribute("aria-expanded", "false");
+      activeIndex = -1;
+    }
+
+    function open(rows) {
+      list.innerHTML = "";
+      if (!rows.length) return close();
+      rows.forEach(function (row) {
+        var li = el("li", "suggestion");
+        li.setAttribute("role", "option");
+        renderRow(li, row);
+        li.addEventListener("mousedown", function (e) {
+          e.preventDefault();
+          close();
+          onPick(row);
+        });
+        list.appendChild(li);
+      });
+      list.hidden = false;
+      input.setAttribute("aria-expanded", "true");
+      activeIndex = -1;
+    }
+
+    function highlight(delta) {
+      var opts = list.querySelectorAll(".suggestion");
+      if (!opts.length) return;
+      activeIndex = (activeIndex + delta + opts.length) % opts.length;
+      Array.prototype.forEach.call(opts, function (o, i) {
+        o.classList.toggle("active", i === activeIndex);
+      });
+    }
+
+    input.addEventListener("input", function () {
+      open(getRows(input.value));
+    });
+    input.addEventListener("keydown", function (e) {
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        highlight(1);
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        highlight(-1);
+      } else if (e.key === "Enter") {
+        var rows = getRows(input.value);
+        if (!rows.length) return;
+        close();
+        onPick(rows[activeIndex >= 0 ? activeIndex : 0]);
+      } else if (e.key === "Escape") {
+        close();
+      } else if (e.key === "Backspace" && !input.value) {
+        input.dispatchEvent(new CustomEvent("emptybackspace"));
+      }
+    });
+    input.addEventListener("blur", function () {
+      setTimeout(close, 120);
+    });
+
+    return { close: close };
+  }
+
+  // ================================================== mode: Pokemon -> items
+
+  function inHouse(pokemon) {
+    return house.some(function (p) {
+      return p.name === pokemon.name;
+    });
   }
 
   /**
@@ -158,44 +293,18 @@
     return scored;
   }
 
-  // ------------------------------------------------------------ rendering
-
-  function tagName(id) {
-    return db.tagById[id] ? db.tagById[id].name : id;
-  }
-
-  function el(tag, className, text) {
-    var node = document.createElement(tag);
-    if (className) node.className = className;
-    if (text != null) node.textContent = text;
-    return node;
-  }
-
-  function sprite(p, className) {
-    if (!p.sprite) return null;
-    var img = el("img", className);
-    img.src = p.sprite;
-    img.alt = "";
-    img.loading = "lazy";
-    img.onerror = function () {
-      img.remove();
-    };
-    return img;
-  }
-
   function renderHouse() {
     els.profile.hidden = !house.length;
     els.profile.innerHTML = "";
     if (!house.length) return;
 
     house.forEach(function (p, index) {
-      var card = el("div", "resident");
-
-      var img = sprite(p, "sprite");
+      var card = el("div", "entity resident");
+      var img = image(p.sprite, "sprite");
       if (img) card.appendChild(img);
 
       var meta = el("div", "profile-meta");
-      var head = el("div", "resident-head");
+      var head = el("div", "entity-head");
       head.appendChild(el("h2", null, p.name));
 
       var remove = el("button", "remove", "×");
@@ -209,10 +318,12 @@
       head.appendChild(remove);
       meta.appendChild(head);
 
-      var sub = [];
-      if (p.number) sub.push("#" + String(p.number).padStart(3, "0"));
-      if (p.idealHabitat) sub.push("Ideal habitat: " + p.idealHabitat);
-      if (sub.length) meta.appendChild(el("p", "sub", sub.join("  ·  ")));
+      var sub = el("div", "sub");
+      if (p.number) sub.appendChild(el("span", null, "#" + String(p.number).padStart(3, "0")));
+      var badge = habitatBadge(p);
+      if (badge) sub.appendChild(badge);
+      else sub.appendChild(el("span", null, "Habitat unknown"));
+      meta.appendChild(sub);
 
       var favWrap = el("div", "taglist");
       (p.favorites || []).forEach(function (f) {
@@ -260,14 +371,13 @@
         "card hits-" + Math.min(house.length > 1 ? m.suits * 2 : m.total, 6)
       );
 
-      var icon = el("img", "icon");
-      icon.src = m.item.iconUrl;
-      icon.alt = "";
-      icon.loading = "lazy";
-      icon.onerror = function () {
-        icon.replaceWith(el("div", "icon icon-missing", "?"));
-      };
-      card.appendChild(icon);
+      var icon = image(m.item.iconUrl, "icon");
+      if (icon) {
+        icon.onerror = function () {
+          icon.replaceWith(el("div", "icon icon-missing", "?"));
+        };
+        card.appendChild(icon);
+      }
 
       var body = el("div", "card-body");
       var title = el("div", "card-title");
@@ -282,31 +392,18 @@
         )
       );
       body.appendChild(title);
-
-      var catRow = el("div", "card-cat");
-      catRow.appendChild(el("span", "cat", m.item.category));
-      if (m.item.use) {
-        catRow.appendChild(
-          el("span", "cat cat-use use-" + m.item.use.toLowerCase(), m.item.use)
-        );
-      }
-      if (m.item.dlc) catRow.appendChild(el("span", "cat cat-dlc", "Expansion"));
-      body.appendChild(catRow);
+      body.appendChild(categoryRow(m.item));
 
       if (house.length > 1) {
         var who = el("div", "who");
         house.forEach(function (p, i) {
           var n = m.per[i].length;
           var chip = el("span", "who-chip" + (n ? "" : " who-miss"));
-          var img = sprite(p, "who-sprite");
+          var img = image(p.sprite, "who-sprite");
           if (img) chip.appendChild(img);
           chip.appendChild(el("span", null, p.name + (n ? " ×" + n : "")));
           chip.title = n
-            ? p.name +
-              " likes: " +
-              m.per[i]
-                .map(tagName)
-                .join(", ")
+            ? p.name + " likes: " + m.per[i].map(tagName).join(", ")
             : p.name + " doesn't care about this";
           who.appendChild(chip);
         });
@@ -314,8 +411,7 @@
       }
 
       var tags = el("div", "taglist");
-      var shown = matchedOnly ? m.hits : m.item.tags;
-      shown.forEach(function (t) {
+      (matchedOnly ? m.hits : m.item.tags).forEach(function (t) {
         var hit = m.hits.indexOf(t) !== -1;
         tags.appendChild(el("span", "tag" + (hit ? " tag-hit" : ""), tagName(t)));
       });
@@ -326,8 +422,6 @@
     });
     els.results.appendChild(frag);
   }
-
-  // ------------------------------------------------------------- house ops
 
   function refresh() {
     renderHouse();
@@ -361,90 +455,36 @@
         : "Add a Pokemon, e.g. Bulbasaur";
     els.q.disabled = house.length >= MAX_HOUSE;
 
-    var hash = house
-      .map(function (p) {
-        return encodeURIComponent(p.name);
-      })
-      .join("+");
-    if (location.hash.slice(1) !== hash) {
-      history.replaceState(null, "", hash ? "#" + hash : location.pathname);
-    }
+    writeHash();
   }
 
   function add(pokemon) {
     if (house.length >= MAX_HOUSE || inHouse(pokemon)) return;
     house.push(pokemon);
-    closeSuggestions();
     refresh();
   }
 
-  // --------------------------------------------------------- autocomplete
-
-  function closeSuggestions() {
-    els.suggestions.hidden = true;
-    els.suggestions.innerHTML = "";
-    els.q.setAttribute("aria-expanded", "false");
-    activeIndex = -1;
-  }
-
-  function openSuggestions(list) {
-    els.suggestions.innerHTML = "";
-    if (!list.length) {
-      closeSuggestions();
-      return;
-    }
-    list.forEach(function (p, i) {
-      var li = el("li", "suggestion");
-      li.setAttribute("role", "option");
-      li.dataset.index = String(i);
-      var img = sprite(p, "suggestion-sprite");
+  combobox(
+    els.q,
+    els.suggestions,
+    function (value) {
+      return search(db.pokemon, value, inHouse);
+    },
+    function (li, p) {
+      var img = image(p.sprite, "suggestion-sprite");
       if (img) li.appendChild(img);
       li.appendChild(el("span", null, p.name));
-      li.addEventListener("mousedown", function (e) {
-        e.preventDefault();
-        add(p);
-      });
-      els.suggestions.appendChild(li);
-    });
-    els.suggestions.hidden = false;
-    els.q.setAttribute("aria-expanded", "true");
-    activeIndex = -1;
-  }
+      var badge = habitatBadge(p);
+      if (badge) li.appendChild(badge);
+    },
+    add
+  );
 
-  function highlight(delta) {
-    var opts = els.suggestions.querySelectorAll(".suggestion");
-    if (!opts.length) return;
-    activeIndex = (activeIndex + delta + opts.length) % opts.length;
-    Array.prototype.forEach.call(opts, function (o, i) {
-      o.classList.toggle("active", i === activeIndex);
-    });
-  }
-
-  els.q.addEventListener("input", function () {
-    openSuggestions(searchPokemon(els.q.value));
-  });
-
-  els.q.addEventListener("keydown", function (e) {
-    if (e.key === "ArrowDown") {
-      e.preventDefault();
-      highlight(1);
-    } else if (e.key === "ArrowUp") {
-      e.preventDefault();
-      highlight(-1);
-    } else if (e.key === "Enter") {
-      var list = searchPokemon(els.q.value);
-      if (!list.length) return;
-      add(list[activeIndex >= 0 ? activeIndex : 0]);
-    } else if (e.key === "Escape") {
-      closeSuggestions();
-    } else if (e.key === "Backspace" && !els.q.value && house.length) {
+  els.q.addEventListener("emptybackspace", function () {
+    if (house.length) {
       house.pop();
       refresh();
     }
-  });
-
-  els.q.addEventListener("blur", function () {
-    setTimeout(closeSuggestions, 120);
   });
 
   [els.category, els.use, els.pleases, els.minhits, els.matchedonly].forEach(
@@ -455,17 +495,229 @@
     }
   );
 
-  function applyHash() {
-    var raw = location.hash.slice(1);
-    if (!raw) return;
-    var names = raw.split("+").filter(Boolean);
-    house = [];
-    names.slice(0, MAX_HOUSE).forEach(function (name) {
-      var found = db.pokemon.filter(function (p) {
-        return normalize(p.name) === normalize(decodeURIComponent(name));
-      })[0];
-      if (found && !inHouse(found)) house.push(found);
+  // ================================================== mode: item -> Pokemon
+
+  /** Rank every Pokemon by how many of its favorites this item covers. */
+  function rankPokemon(item) {
+    var has = {};
+    item.tags.forEach(function (t) {
+      has[t] = true;
     });
+
+    var scored = [];
+    db.pokemon.forEach(function (p) {
+      var hits = (p.favorites || []).filter(function (f) {
+        return has[f];
+      });
+      if (!hits.length) return;
+      scored.push({ pokemon: p, hits: hits, total: (p.favorites || []).length });
+    });
+
+    scored.sort(function (a, b) {
+      if (b.hits.length !== a.hits.length) return b.hits.length - a.hits.length;
+      return a.pokemon.name.localeCompare(b.pokemon.name);
+    });
+    return scored;
+  }
+
+  function renderItemProfile(item) {
+    els.itemProfile.hidden = false;
+    els.itemProfile.innerHTML = "";
+
+    var card = el("div", "entity");
+    var icon = image(item.iconUrl, "sprite");
+    if (icon) {
+      icon.onerror = function () {
+        icon.replaceWith(el("div", "sprite icon-missing", "?"));
+      };
+      card.appendChild(icon);
+    }
+
+    var meta = el("div", "profile-meta");
+    meta.appendChild(el("h2", null, item.name));
+    meta.appendChild(categoryRow(item));
+    if (item.description) meta.appendChild(el("p", "sub", item.description));
+
+    var tags = el("div", "taglist");
+    item.tags.forEach(function (t) {
+      tags.appendChild(el("span", "tag tag-fav", tagName(t)));
+    });
+    if (!item.tags.length) {
+      tags.appendChild(el("span", "tag tag-none", "No favorite tags — no Pokemon prefers it"));
+    }
+    meta.appendChild(tags);
+
+    card.appendChild(meta);
+    els.itemProfile.appendChild(card);
+  }
+
+  function renderItemResults() {
+    var minHits = parseInt(els.iminhits.value, 10);
+    var habitat = els.habitat.value;
+
+    var rows = itemMatches.filter(function (m) {
+      if (m.hits.length < minHits) return false;
+      if (habitat && m.pokemon.idealHabitat !== habitat) return false;
+      return true;
+    });
+
+    els.icount.textContent =
+      rows.length + " of " + itemMatches.length + " matching Pokemon shown";
+
+    els.iresults.innerHTML = "";
+    if (!rows.length) {
+      els.iresults.appendChild(
+        el(
+          "p",
+          "empty",
+          itemMatches.length
+            ? "No Pokemon match those filters."
+            : "No Pokemon lists any of this item's tags as a favorite."
+        )
+      );
+      return;
+    }
+
+    var frag = document.createDocumentFragment();
+    rows.forEach(function (m) {
+      var card = el("article", "card hits-" + Math.min(m.hits.length, 6));
+      var img = image(m.pokemon.sprite, "icon");
+      if (img) card.appendChild(img);
+
+      var body = el("div", "card-body");
+      var title = el("div", "card-title");
+      title.appendChild(el("span", "name", m.pokemon.name));
+      title.appendChild(
+        el("span", "score", m.hits.length + "/" + m.total + " favorites")
+      );
+      body.appendChild(title);
+
+      var sub = el("div", "sub");
+      if (m.pokemon.number) {
+        sub.appendChild(el("span", null, "#" + String(m.pokemon.number).padStart(3, "0")));
+      }
+      var badge = habitatBadge(m.pokemon);
+      if (badge) sub.appendChild(badge);
+      body.appendChild(sub);
+
+      var tags = el("div", "taglist");
+      (m.pokemon.favorites || []).forEach(function (f) {
+        var hit = m.hits.indexOf(f) !== -1;
+        tags.appendChild(el("span", "tag" + (hit ? " tag-hit" : ""), tagName(f)));
+      });
+      body.appendChild(tags);
+
+      card.appendChild(body);
+      frag.appendChild(card);
+    });
+    els.iresults.appendChild(frag);
+  }
+
+  function selectItem(item) {
+    currentItem = item;
+    els.iq.value = item.name;
+    renderItemProfile(item);
+    itemMatches = rankPokemon(item);
+    els.icontrols.hidden = false;
+    els.iempty.hidden = true;
+    renderItemResults();
+    writeHash();
+  }
+
+  combobox(
+    els.iq,
+    els.isuggestions,
+    function (value) {
+      return search(db.items, value);
+    },
+    function (li, item) {
+      var img = image(item.iconUrl, "suggestion-sprite");
+      if (img) li.appendChild(img);
+      li.appendChild(el("span", null, item.name));
+      li.appendChild(el("span", "cat", item.category));
+    },
+    selectItem
+  );
+
+  [els.habitat, els.iminhits].forEach(function (control) {
+    control.addEventListener("change", function () {
+      if (currentItem) renderItemResults();
+    });
+  });
+
+  // ----------------------------------------------------------------- tabs
+
+  var mode = "pokemon";
+
+  function setMode(next) {
+    mode = next;
+    var isPokemon = mode === "pokemon";
+    els.panelPokemon.hidden = !isPokemon;
+    els.panelItem.hidden = isPokemon;
+    els.tabPokemon.classList.toggle("active", isPokemon);
+    els.tabItem.classList.toggle("active", !isPokemon);
+    els.tabPokemon.setAttribute("aria-selected", String(isPokemon));
+    els.tabItem.setAttribute("aria-selected", String(!isPokemon));
+    writeHash();
+  }
+
+  els.tabPokemon.addEventListener("click", function () {
+    setMode("pokemon");
+  });
+  els.tabItem.addEventListener("click", function () {
+    setMode("item");
+  });
+
+  // ----------------------------------------------------------------- hash
+
+  var applyingHash = false;
+
+  function writeHash() {
+    if (applyingHash) return;
+    var hash =
+      mode === "item"
+        ? currentItem
+          ? "item/" + encodeURIComponent(currentItem.id)
+          : "item"
+        : house
+            .map(function (p) {
+              return encodeURIComponent(p.name);
+            })
+            .join("+");
+    if (location.hash.slice(1) !== hash) {
+      history.replaceState(null, "", hash ? "#" + hash : location.pathname);
+    }
+  }
+
+  function applyHash() {
+    applyingHash = true;
+    var raw = location.hash.slice(1);
+
+    if (raw.indexOf("item") === 0) {
+      setMode("item");
+      var id = decodeURIComponent(raw.slice("item/".length));
+      var found = db.items.filter(function (i) {
+        return i.id === id;
+      })[0];
+      if (found) selectItem(found);
+      applyingHash = false;
+      writeHash();
+      return;
+    }
+
+    setMode("pokemon");
+    house = [];
+    raw
+      .split("+")
+      .filter(Boolean)
+      .slice(0, MAX_HOUSE)
+      .forEach(function (name) {
+        var found = db.pokemon.filter(function (p) {
+          return normalize(p.name) === normalize(decodeURIComponent(name));
+        })[0];
+        if (found && !inHouse(found)) house.push(found);
+      });
+    applyingHash = false;
     refresh();
   }
 
