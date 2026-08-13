@@ -8,11 +8,12 @@
     panelItem: document.getElementById("panel-item"),
 
     q: document.getElementById("q"),
+    qclear: document.getElementById("qclear"),
     suggestions: document.getElementById("suggestions"),
     profile: document.getElementById("profile"),
     controls: document.getElementById("controls"),
     category: document.getElementById("category"),
-    use: document.getElementById("use"),
+    useChecks: document.getElementById("usechecks"),
     pleases: document.getElementById("pleases"),
     pleasesField: document.getElementById("pleasesfield"),
     minhits: document.getElementById("minhits"),
@@ -22,24 +23,33 @@
     empty: document.getElementById("empty"),
 
     iq: document.getElementById("iq"),
+    iqclear: document.getElementById("iqclear"),
     isuggestions: document.getElementById("isuggestions"),
     itemProfile: document.getElementById("itemprofile"),
+    tagHeader: document.getElementById("tagheader"),
     icontrols: document.getElementById("icontrols"),
     habitat: document.getElementById("habitat"),
+    habitatField: document.getElementById("habitatfield"),
     iminhits: document.getElementById("iminhits"),
+    iminhitsField: document.getElementById("iminhitsfield"),
+    itemcat: document.getElementById("itemcat"),
+    itemcatField: document.getElementById("itemcatfield"),
     icount: document.getElementById("icount"),
     iresults: document.getElementById("iresults"),
     iempty: document.getElementById("iempty")
   };
 
-  // sentinel value for the "Not listed" option of the Use filter
+  // sentinel for items serebii lists without a use
   var NO_USE = "__none__";
+  // unchecked by default: paving and unclassified clutter are rarely wanted
+  var USE_OFF_BY_DEFAULT = ["Road", NO_USE];
   var MAX_HOUSE = 4;
 
   var db = { items: [], pokemon: [], tags: [], tagById: {} };
   var house = [];
   var matches = [];
   var currentItem = null;
+  var currentTag = null;
   var itemMatches = [];
 
   // ------------------------------------------------------------- loading
@@ -57,6 +67,69 @@
         opt.textContent = value;
         select.appendChild(opt);
       });
+  }
+
+  function buildUseChecks() {
+    var seen = {};
+    db.items.forEach(function (i) {
+      if (i.use) seen[i.use] = true;
+    });
+    var values = Object.keys(seen).sort();
+    values.push(NO_USE);
+
+    values.forEach(function (value) {
+      var label = el("label", "check");
+      var box = document.createElement("input");
+      box.type = "checkbox";
+      box.value = value;
+      box.checked = USE_OFF_BY_DEFAULT.indexOf(value) === -1;
+      box.addEventListener("change", function () {
+        if (house.length) renderResults();
+      });
+      label.appendChild(box);
+      label.appendChild(el("span", null, value === NO_USE ? "Not listed" : value));
+      els.useChecks.appendChild(label);
+    });
+  }
+
+  /**
+   * Filters sit open on a roomy screen and collapsed on a phone, where they
+   * would otherwise push the results below the fold. Once the reader opens or
+   * closes them by hand that choice sticks, including across a rotation.
+   */
+  function setUpFilterCollapse() {
+    var roomy = window.matchMedia("(min-width: 601px)");
+    var chosen = false;
+    var syncing = false;
+
+    function apply() {
+      if (chosen) return;
+      syncing = true;
+      els.controls.open = roomy.matches;
+      els.icontrols.open = roomy.matches;
+      syncing = false;
+    }
+
+    [els.controls, els.icontrols].forEach(function (details) {
+      details.addEventListener("toggle", function () {
+        if (!syncing) chosen = true;
+      });
+    });
+
+    apply();
+    if (roomy.addEventListener) roomy.addEventListener("change", apply);
+    else roomy.addListener(apply);
+  }
+
+  function checkedUses() {
+    var on = {};
+    Array.prototype.forEach.call(
+      els.useChecks.querySelectorAll("input"),
+      function (box) {
+        if (box.checked) on[box.value] = true;
+      }
+    );
+    return on;
   }
 
   function loadJSON(path) {
@@ -80,12 +153,11 @@
       });
 
       fillOptions(els.category, db.items, "category");
-      fillOptions(els.use, db.items, "use");
-      var none = document.createElement("option");
-      none.value = NO_USE;
-      none.textContent = "Not listed";
-      els.use.appendChild(none);
+      fillOptions(els.itemcat, db.items, "category");
       fillOptions(els.habitat, db.pokemon, "idealHabitat");
+      buildUseChecks();
+
+      setUpFilterCollapse();
 
       els.q.disabled = false;
       els.iq.disabled = false;
@@ -127,6 +199,14 @@
     return node;
   }
 
+  /** A span of text that acts as a link without navigating. */
+  function linkish(text, className, onClick) {
+    var node = el("button", className, text);
+    node.type = "button";
+    node.addEventListener("click", onClick);
+    return node;
+  }
+
   function image(src, className) {
     if (!src) return null;
     var img = el("img", className);
@@ -161,11 +241,36 @@
     return row;
   }
 
+  /** A tag chip that jumps to the item tab and browses everything with it. */
+  function tagChip(id, extraClass) {
+    return linkish(tagName(id), "tag tag-link" + (extraClass ? " " + extraClass : ""), function () {
+      selectTag(id);
+    });
+  }
+
+  function itemLink(item, className) {
+    return linkish(item.name, className + " link", function () {
+      selectItem(item);
+    });
+  }
+
+  function pokemonLink(pokemon, className) {
+    return linkish(pokemon.name, className + " link", function () {
+      house = [pokemon];
+      setMode("pokemon");
+      refresh();
+    });
+  }
+
   /**
    * Wire an input + listbox as a combobox. `onPick` receives the chosen row.
    */
-  function combobox(input, list, getRows, renderRow, onPick) {
+  function combobox(input, list, clearBtn, getRows, renderRow, onPick) {
     var activeIndex = -1;
+
+    function sync() {
+      clearBtn.hidden = !input.value;
+    }
 
     function close() {
       list.hidden = true;
@@ -203,7 +308,15 @@
     }
 
     input.addEventListener("input", function () {
+      sync();
       open(getRows(input.value));
+    });
+
+    clearBtn.addEventListener("click", function () {
+      input.value = "";
+      sync();
+      close();
+      input.focus();
     });
     input.addEventListener("keydown", function (e) {
       if (e.key === "ArrowDown") {
@@ -227,7 +340,7 @@
       setTimeout(close, 120);
     });
 
-    return { close: close };
+    return { close: close, sync: sync };
   }
 
   // ================================================== mode: Pokemon -> items
@@ -327,7 +440,7 @@
 
       var favWrap = el("div", "taglist");
       (p.favorites || []).forEach(function (f) {
-        favWrap.appendChild(el("span", "tag tag-fav", tagName(f)));
+        favWrap.appendChild(tagChip(f, "tag-fav"));
       });
       if (!(p.favorites || []).length) {
         favWrap.appendChild(el("span", "tag tag-none", "No favorites recorded"));
@@ -343,15 +456,14 @@
     var minHits = parseInt(els.minhits.value, 10);
     var minSuits = house.length > 1 ? parseInt(els.pleases.value, 10) : 1;
     var category = els.category.value;
-    var use = els.use.value;
+    var uses = checkedUses();
     var matchedOnly = els.matchedonly.checked;
 
     var rows = matches.filter(function (m) {
       if (m.total < minHits) return false;
       if (m.suits < minSuits) return false;
       if (category && m.item.category !== category) return false;
-      if (use === NO_USE && m.item.use) return false;
-      if (use && use !== NO_USE && m.item.use !== use) return false;
+      if (!uses[m.item.use || NO_USE]) return false;
       return true;
     });
 
@@ -381,13 +493,13 @@
 
       var body = el("div", "card-body");
       var title = el("div", "card-title");
-      title.appendChild(el("span", "name", m.item.name));
+      title.appendChild(itemLink(m.item, "name"));
       title.appendChild(
         el(
           "span",
           "score",
           house.length > 1
-            ? m.suits + "/" + house.length + "  ·  " + m.total + " hits"
+            ? m.suits + "/" + house.length + " · " + m.total + " hits"
             : m.total + " hit" + (m.total > 1 ? "s" : "")
         )
       );
@@ -412,8 +524,7 @@
 
       var tags = el("div", "taglist");
       (matchedOnly ? m.hits : m.item.tags).forEach(function (t) {
-        var hit = m.hits.indexOf(t) !== -1;
-        tags.appendChild(el("span", "tag" + (hit ? " tag-hit" : ""), tagName(t)));
+        tags.appendChild(tagChip(t, m.hits.indexOf(t) !== -1 ? "tag-hit" : ""));
       });
       body.appendChild(tags);
 
@@ -454,6 +565,7 @@
         ? "Add a roommate (" + house.length + "/" + MAX_HOUSE + ")"
         : "Add a Pokemon, e.g. Bulbasaur";
     els.q.disabled = house.length >= MAX_HOUSE;
+    pokemonCombo.sync();
 
     writeHash();
   }
@@ -464,9 +576,10 @@
     refresh();
   }
 
-  combobox(
+  var pokemonCombo = combobox(
     els.q,
     els.suggestions,
+    els.qclear,
     function (value) {
       return search(db.pokemon, value, inHouse);
     },
@@ -487,13 +600,11 @@
     }
   });
 
-  [els.category, els.use, els.pleases, els.minhits, els.matchedonly].forEach(
-    function (control) {
-      control.addEventListener("change", function () {
-        if (house.length) renderResults();
-      });
-    }
-  );
+  [els.category, els.pleases, els.minhits, els.matchedonly].forEach(function (control) {
+    control.addEventListener("change", function () {
+      if (house.length) renderResults();
+    });
+  });
 
   // ================================================== mode: item -> Pokemon
 
@@ -523,6 +634,7 @@
   function renderItemProfile(item) {
     els.itemProfile.hidden = false;
     els.itemProfile.innerHTML = "";
+    els.tagHeader.hidden = true;
 
     var card = el("div", "entity");
     var icon = image(item.iconUrl, "sprite");
@@ -536,14 +648,16 @@
     var meta = el("div", "profile-meta");
     meta.appendChild(el("h2", null, item.name));
     meta.appendChild(categoryRow(item));
-    if (item.description) meta.appendChild(el("p", "sub", item.description));
+    if (item.description) meta.appendChild(el("p", "desc", item.description));
 
     var tags = el("div", "taglist");
     item.tags.forEach(function (t) {
-      tags.appendChild(el("span", "tag tag-fav", tagName(t)));
+      tags.appendChild(tagChip(t, "tag-fav"));
     });
     if (!item.tags.length) {
-      tags.appendChild(el("span", "tag tag-none", "No favorite tags, so no Pokemon prefers it"));
+      tags.appendChild(
+        el("span", "tag tag-none", "No favorite tags, so no Pokemon prefers it")
+      );
     }
     meta.appendChild(tags);
 
@@ -586,7 +700,7 @@
 
       var body = el("div", "card-body");
       var title = el("div", "card-title");
-      title.appendChild(el("span", "name", m.pokemon.name));
+      title.appendChild(pokemonLink(m.pokemon, "name"));
       title.appendChild(
         el("span", "score", m.hits.length + "/" + m.total + " favorites")
       );
@@ -602,8 +716,7 @@
 
       var tags = el("div", "taglist");
       (m.pokemon.favorites || []).forEach(function (f) {
-        var hit = m.hits.indexOf(f) !== -1;
-        tags.appendChild(el("span", "tag" + (hit ? " tag-hit" : ""), tagName(f)));
+        tags.appendChild(tagChip(f, m.hits.indexOf(f) !== -1 ? "tag-hit" : ""));
       });
       body.appendChild(tags);
 
@@ -615,18 +728,109 @@
 
   function selectItem(item) {
     currentItem = item;
+    currentTag = null;
+    setMode("item");
     els.iq.value = item.name;
+    itemCombo.sync();
     renderItemProfile(item);
     itemMatches = rankPokemon(item);
+
     els.icontrols.hidden = false;
+    els.habitatField.hidden = false;
+    els.iminhitsField.hidden = false;
+    els.itemcatField.hidden = true;
     els.iempty.hidden = true;
     renderItemResults();
     writeHash();
   }
 
-  combobox(
+  // ------------------------------------------------------- browse by tag
+
+  function renderTagResults() {
+    var category = els.itemcat.value;
+    var all = db.items.filter(function (i) {
+      return i.tags.indexOf(currentTag) !== -1;
+    });
+    var rows = all.filter(function (i) {
+      return !category || i.category === category;
+    });
+    rows.sort(function (a, b) {
+      return a.name.localeCompare(b.name);
+    });
+
+    els.icount.textContent = rows.length + " of " + all.length + " items shown";
+
+    els.iresults.innerHTML = "";
+    if (!rows.length) {
+      els.iresults.appendChild(el("p", "empty", "No items match those filters."));
+      return;
+    }
+
+    var frag = document.createDocumentFragment();
+    rows.forEach(function (item) {
+      var card = el("article", "card");
+      var icon = image(item.iconUrl, "icon");
+      if (icon) {
+        icon.onerror = function () {
+          icon.replaceWith(el("div", "icon icon-missing", "?"));
+        };
+        card.appendChild(icon);
+      }
+
+      var body = el("div", "card-body");
+      var title = el("div", "card-title");
+      title.appendChild(itemLink(item, "name"));
+      body.appendChild(title);
+      body.appendChild(categoryRow(item));
+
+      var tags = el("div", "taglist");
+      item.tags.forEach(function (t) {
+        tags.appendChild(tagChip(t, t === currentTag ? "tag-hit" : ""));
+      });
+      body.appendChild(tags);
+
+      card.appendChild(body);
+      frag.appendChild(card);
+    });
+    els.iresults.appendChild(frag);
+  }
+
+  function selectTag(id) {
+    currentTag = id;
+    currentItem = null;
+    setMode("item");
+    els.iq.value = "";
+    itemCombo.sync();
+    els.itemProfile.hidden = true;
+    els.itemProfile.innerHTML = "";
+
+    els.tagHeader.hidden = false;
+    els.tagHeader.innerHTML = "";
+    els.tagHeader.appendChild(el("span", "tag-header-label", "Items tagged"));
+    els.tagHeader.appendChild(el("span", "tag tag-fav", tagName(id)));
+    var clear = linkish("Clear", "link", function () {
+      currentTag = null;
+      els.tagHeader.hidden = true;
+      els.icontrols.hidden = true;
+      els.iresults.innerHTML = "";
+      els.iempty.hidden = false;
+      writeHash();
+    });
+    els.tagHeader.appendChild(clear);
+
+    els.icontrols.hidden = false;
+    els.habitatField.hidden = true;
+    els.iminhitsField.hidden = true;
+    els.itemcatField.hidden = false;
+    els.iempty.hidden = true;
+    renderTagResults();
+    writeHash();
+  }
+
+  var itemCombo = combobox(
     els.iq,
     els.isuggestions,
+    els.iqclear,
     function (value) {
       return search(db.items, value);
     },
@@ -643,6 +847,10 @@
     control.addEventListener("change", function () {
       if (currentItem) renderItemResults();
     });
+  });
+
+  els.itemcat.addEventListener("change", function () {
+    if (currentTag) renderTagResults();
   });
 
   // ----------------------------------------------------------------- tabs
@@ -674,16 +882,18 @@
 
   function writeHash() {
     if (applyingHash) return;
-    var hash =
-      mode === "item"
-        ? currentItem
-          ? "item/" + encodeURIComponent(currentItem.id)
-          : "item"
-        : house
-            .map(function (p) {
-              return encodeURIComponent(p.name);
-            })
-            .join("+");
+    var hash;
+    if (mode === "item") {
+      if (currentTag) hash = "tag/" + encodeURIComponent(currentTag);
+      else if (currentItem) hash = "item/" + encodeURIComponent(currentItem.id);
+      else hash = "item";
+    } else {
+      hash = house
+        .map(function (p) {
+          return encodeURIComponent(p.name);
+        })
+        .join("+");
+    }
     if (location.hash.slice(1) !== hash) {
       history.replaceState(null, "", hash ? "#" + hash : location.pathname);
     }
@@ -693,15 +903,22 @@
     applyingHash = true;
     var raw = location.hash.slice(1);
 
-    if (raw.indexOf("item") === 0) {
+    if (raw.indexOf("tag/") === 0) {
+      var tagId = decodeURIComponent(raw.slice("tag/".length));
+      applyingHash = false;
+      if (db.tagById[tagId]) return selectTag(tagId);
       setMode("item");
+      return;
+    }
+
+    if (raw.indexOf("item") === 0) {
       var id = decodeURIComponent(raw.slice("item/".length));
       var found = db.items.filter(function (i) {
         return i.id === id;
       })[0];
-      if (found) selectItem(found);
       applyingHash = false;
-      writeHash();
+      if (found) return selectItem(found);
+      setMode("item");
       return;
     }
 

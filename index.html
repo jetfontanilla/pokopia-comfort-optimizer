@@ -35,21 +35,24 @@
           aria-expanded="false"
           aria-controls="suggestions"
           aria-autocomplete="list" />
+        <button id="qclear" class="clear" type="button" aria-label="Clear search" hidden>×</button>
         <ul id="suggestions" class="suggestions" role="listbox" hidden></ul>
       </div>
     </div>
 
     <div id="profile" class="profile" hidden></div>
 
-    <div id="controls" class="controls" hidden>
+    <details id="controls" class="filters" hidden>
+      <summary>Filters <span id="count" class="count"></span></summary>
+      <div class="controls">
       <label class="field">
         <span>Category</span>
         <select id="category"><option value="">All</option></select>
       </label>
-      <label class="field">
+      <div class="field">
         <span>Use</span>
-        <select id="use"><option value="">All</option></select>
-      </label>
+        <div id="usechecks" class="checks"></div>
+      </div>
       <label class="field" id="pleasesfield" hidden>
         <span>Suits</span>
         <select id="pleases">
@@ -70,10 +73,10 @@
       </label>
       <label class="check">
         <input id="matchedonly" type="checkbox" checked />
-        <span>Only show matched tags on each item</span>
+        <span>Only matched tags</span>
       </label>
-      <p id="count" class="count"></p>
-    </div>
+      </div>
+    </details>
 
     <div id="results" class="results" aria-live="polite"></div>
     <p id="empty" class="empty">Start typing a Pokemon name above.</p>
@@ -81,7 +84,7 @@
 
   <!-- ------------------------------------------------ item -> Pokemon -->
   <section id="panel-item" role="tabpanel" aria-labelledby="tab-item" hidden>
-    <p class="mode-hint">Pick an item to see which Pokemon like it, ranked by how many of their favorites it hits.</p>
+    <p class="mode-hint">Pick an item to see which Pokemon like it, or click any tag to browse every item carrying it.</p>
 
     <div class="search" role="search">
       <div class="combo">
@@ -95,18 +98,22 @@
           aria-expanded="false"
           aria-controls="isuggestions"
           aria-autocomplete="list" />
+        <button id="iqclear" class="clear" type="button" aria-label="Clear search" hidden>×</button>
         <ul id="isuggestions" class="suggestions" role="listbox" hidden></ul>
       </div>
     </div>
 
     <div id="itemprofile" class="profile" hidden></div>
+    <div id="tagheader" class="tag-header" hidden></div>
 
-    <div id="icontrols" class="controls" hidden>
-      <label class="field">
+    <details id="icontrols" class="filters" hidden>
+      <summary>Filters <span id="icount" class="count"></span></summary>
+      <div class="controls">
+      <label class="field" id="habitatfield">
         <span>Ideal habitat</span>
         <select id="habitat"><option value="">All</option></select>
       </label>
-      <label class="field">
+      <label class="field" id="iminhitsfield">
         <span>Min. hits</span>
         <select id="iminhits">
           <option value="1">1+</option>
@@ -115,8 +122,12 @@
           <option value="4">4+</option>
         </select>
       </label>
-      <p id="icount" class="count"></p>
-    </div>
+      <label class="field" id="itemcatfield" hidden>
+        <span>Category</span>
+        <select id="itemcat"><option value="">All</option></select>
+      </label>
+      </div>
+    </details>
 
     <div id="iresults" class="results" aria-live="polite"></div>
     <p id="iempty" class="empty">Start typing an item name above.</p>
