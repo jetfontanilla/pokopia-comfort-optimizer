@@ -26,14 +26,16 @@
     iqclear: document.getElementById("iqclear"),
     isuggestions: document.getElementById("isuggestions"),
     itemProfile: document.getElementById("itemprofile"),
-    tagHeader: document.getElementById("tagheader"),
-    icontrols: document.getElementById("icontrols"),
-    habitat: document.getElementById("habitat"),
-    habitatField: document.getElementById("habitatfield"),
-    iminhits: document.getElementById("iminhits"),
-    iminhitsField: document.getElementById("iminhitsfield"),
+    browseFilters: document.getElementById("browsefilters"),
+    tagFilter: document.getElementById("tagfilter"),
     itemcat: document.getElementById("itemcat"),
-    itemcatField: document.getElementById("itemcatfield"),
+    bUseChecks: document.getElementById("busechecks"),
+    browseReset: document.getElementById("browsereset"),
+    bcount: document.getElementById("bcount"),
+    detailFilters: document.getElementById("detailfilters"),
+    habitat: document.getElementById("habitat"),
+    iminhits: document.getElementById("iminhits"),
+    backToBrowse: document.getElementById("backtobrowse"),
     icount: document.getElementById("icount"),
     iresults: document.getElementById("iresults"),
     iempty: document.getElementById("iempty")
@@ -44,13 +46,15 @@
   // unchecked by default: paving and unclassified clutter are rarely wanted
   var USE_OFF_BY_DEFAULT = ["Road", NO_USE];
   var MAX_HOUSE = 4;
+  // the unfiltered item list is ~1700 rows, too many to paint at once
+  var BROWSE_LIMIT = 300;
 
   var db = { items: [], pokemon: [], tags: [], tagById: {} };
   var house = [];
   var matches = [];
   var currentItem = null;
-  var currentTag = null;
   var itemMatches = [];
+  var itemCombo;
 
   // ------------------------------------------------------------- loading
 
@@ -69,26 +73,38 @@
       });
   }
 
-  function buildUseChecks() {
+  function useValues() {
     var seen = {};
     db.items.forEach(function (i) {
       if (i.use) seen[i.use] = true;
     });
     var values = Object.keys(seen).sort();
     values.push(NO_USE);
+    return values;
+  }
 
-    values.forEach(function (value) {
+  /**
+   * `offByDefault` is empty for browsing, where the point is to see everything,
+   * and drops Road plus untagged clutter when matching items to a Pokemon.
+   */
+  function buildUseChecks(container, offByDefault, onChange) {
+    useValues().forEach(function (value) {
       var label = el("label", "check");
       var box = document.createElement("input");
       box.type = "checkbox";
       box.value = value;
-      box.checked = USE_OFF_BY_DEFAULT.indexOf(value) === -1;
-      box.addEventListener("change", function () {
-        if (house.length) renderResults();
-      });
+      box.checked = offByDefault.indexOf(value) === -1;
+      box.dataset.on = String(box.checked);
+      box.addEventListener("change", onChange);
       label.appendChild(box);
       label.appendChild(el("span", null, value === NO_USE ? "Not listed" : value));
-      els.useChecks.appendChild(label);
+      container.appendChild(label);
+    });
+  }
+
+  function resetChecks(container) {
+    Array.prototype.forEach.call(container.querySelectorAll("input"), function (box) {
+      box.checked = box.dataset.on === "true";
     });
   }
 
@@ -98,6 +114,7 @@
    * closes them by hand that choice sticks, including across a rotation.
    */
   function setUpFilterCollapse() {
+    var FILTER_PANELS = [els.controls, els.browseFilters, els.detailFilters];
     var roomy = window.matchMedia("(min-width: 601px)");
     var chosen = false;
     var syncing = false;
@@ -105,12 +122,13 @@
     function apply() {
       if (chosen) return;
       syncing = true;
-      els.controls.open = roomy.matches;
-      els.icontrols.open = roomy.matches;
+      FILTER_PANELS.forEach(function (d) {
+        d.open = roomy.matches;
+      });
       syncing = false;
     }
 
-    [els.controls, els.icontrols].forEach(function (details) {
+    FILTER_PANELS.forEach(function (details) {
       details.addEventListener("toggle", function () {
         if (!syncing) chosen = true;
       });
@@ -155,7 +173,18 @@
       fillOptions(els.category, db.items, "category");
       fillOptions(els.itemcat, db.items, "category");
       fillOptions(els.habitat, db.pokemon, "idealHabitat");
-      buildUseChecks();
+      db.tags.forEach(function (t) {
+        var opt = document.createElement("option");
+        opt.value = t.id;
+        opt.textContent = t.name;
+        els.tagFilter.appendChild(opt);
+      });
+      buildUseChecks(els.useChecks, USE_OFF_BY_DEFAULT, function () {
+        if (house.length) renderResults();
+      });
+      buildUseChecks(els.bUseChecks, [], function () {
+        if (!currentItem) renderBrowse();
+      });
 
       setUpFilterCollapse();
 
@@ -219,6 +248,22 @@
     return img;
   }
 
+  /** Item icon that tries serebii's copy before showing a placeholder. */
+  function itemIcon(item, className) {
+    var img = image(item.iconUrl, className);
+    if (!img) return null;
+    var triedAlt = false;
+    img.onerror = function () {
+      if (!triedAlt && item.iconAlt) {
+        triedAlt = true;
+        img.src = item.iconAlt;
+        return;
+      }
+      img.replaceWith(el("div", className + " icon-missing", "?"));
+    };
+    return img;
+  }
+
   function habitatBadge(pokemon) {
     if (!pokemon.idealHabitat) return null;
     return el(
@@ -238,6 +283,7 @@
       row.appendChild(el("span", "cat cat-use use-" + item.use.toLowerCase(), item.use));
     }
     if (item.dlc) row.appendChild(el("span", "cat cat-dlc", "Expansion"));
+    if (item.event) row.appendChild(el("span", "cat cat-event", "Event"));
     return row;
   }
 
@@ -483,13 +529,8 @@
         "card hits-" + Math.min(house.length > 1 ? m.suits * 2 : m.total, 6)
       );
 
-      var icon = image(m.item.iconUrl, "icon");
-      if (icon) {
-        icon.onerror = function () {
-          icon.replaceWith(el("div", "icon icon-missing", "?"));
-        };
-        card.appendChild(icon);
-      }
+      var icon = itemIcon(m.item, "icon");
+      if (icon) card.appendChild(icon);
 
       var body = el("div", "card-body");
       var title = el("div", "card-title");
@@ -524,7 +565,7 @@
 
       var tags = el("div", "taglist");
       (matchedOnly ? m.hits : m.item.tags).forEach(function (t) {
-        tags.appendChild(tagChip(t, m.hits.indexOf(t) !== -1 ? "tag-hit" : ""));
+        tags.appendChild(tagChip(t, m.hits.indexOf(t) !== -1 ? "tag-hit" : "tag-miss"));
       });
       body.appendChild(tags);
 
@@ -634,16 +675,10 @@
   function renderItemProfile(item) {
     els.itemProfile.hidden = false;
     els.itemProfile.innerHTML = "";
-    els.tagHeader.hidden = true;
 
     var card = el("div", "entity");
-    var icon = image(item.iconUrl, "sprite");
-    if (icon) {
-      icon.onerror = function () {
-        icon.replaceWith(el("div", "sprite icon-missing", "?"));
-      };
-      card.appendChild(icon);
-    }
+    var icon = itemIcon(item, "sprite");
+    if (icon) card.appendChild(icon);
 
     var meta = el("div", "profile-meta");
     meta.appendChild(el("h2", null, item.name));
@@ -716,7 +751,7 @@
 
       var tags = el("div", "taglist");
       (m.pokemon.favorites || []).forEach(function (f) {
-        tags.appendChild(tagChip(f, m.hits.indexOf(f) !== -1 ? "tag-hit" : ""));
+        tags.appendChild(tagChip(f, m.hits.indexOf(f) !== -1 ? "tag-hit" : "tag-miss"));
       });
       body.appendChild(tags);
 
@@ -728,37 +763,49 @@
 
   function selectItem(item) {
     currentItem = item;
-    currentTag = null;
     setMode("item");
     els.iq.value = item.name;
     itemCombo.sync();
     renderItemProfile(item);
     itemMatches = rankPokemon(item);
 
-    els.icontrols.hidden = false;
-    els.habitatField.hidden = false;
-    els.iminhitsField.hidden = false;
-    els.itemcatField.hidden = true;
+    els.browseFilters.hidden = true;
+    els.detailFilters.hidden = false;
     els.iempty.hidden = true;
     renderItemResults();
     writeHash();
   }
 
-  // ------------------------------------------------------- browse by tag
+  // ---------------------------------------------------------- browse mode
 
-  function renderTagResults() {
+  function browseUses() {
+    var on = {};
+    Array.prototype.forEach.call(
+      els.bUseChecks.querySelectorAll("input"),
+      function (box) {
+        if (box.checked) on[box.value] = true;
+      }
+    );
+    return on;
+  }
+
+  /** The item list with no item picked: everything, narrowed by the filters. */
+  function renderBrowse() {
+    var tag = els.tagFilter.value;
     var category = els.itemcat.value;
-    var all = db.items.filter(function (i) {
-      return i.tags.indexOf(currentTag) !== -1;
-    });
-    var rows = all.filter(function (i) {
-      return !category || i.category === category;
+    var uses = browseUses();
+
+    var rows = db.items.filter(function (i) {
+      if (tag && i.tags.indexOf(tag) === -1) return false;
+      if (category && i.category !== category) return false;
+      return uses[i.use || NO_USE];
     });
     rows.sort(function (a, b) {
       return a.name.localeCompare(b.name);
     });
 
-    els.icount.textContent = rows.length + " of " + all.length + " items shown";
+    els.bcount.textContent =
+      rows.length + " of " + db.items.length + " items shown";
 
     els.iresults.innerHTML = "";
     if (!rows.length) {
@@ -766,16 +813,13 @@
       return;
     }
 
+    // The full list is long enough that rendering it all janks a phone.
+    var capped = rows.slice(0, BROWSE_LIMIT);
     var frag = document.createDocumentFragment();
-    rows.forEach(function (item) {
+    capped.forEach(function (item) {
       var card = el("article", "card");
-      var icon = image(item.iconUrl, "icon");
-      if (icon) {
-        icon.onerror = function () {
-          icon.replaceWith(el("div", "icon icon-missing", "?"));
-        };
-        card.appendChild(icon);
-      }
+      var icon = itemIcon(item, "icon");
+      if (icon) card.appendChild(icon);
 
       var body = el("div", "card-body");
       var title = el("div", "card-title");
@@ -785,7 +829,7 @@
 
       var tags = el("div", "taglist");
       item.tags.forEach(function (t) {
-        tags.appendChild(tagChip(t, t === currentTag ? "tag-hit" : ""));
+        tags.appendChild(tagChip(t, t && t === tag ? "tag-hit" : "tag-miss"));
       });
       body.appendChild(tags);
 
@@ -793,41 +837,42 @@
       frag.appendChild(card);
     });
     els.iresults.appendChild(frag);
+
+    if (rows.length > capped.length) {
+      var more = el(
+        "p",
+        "empty",
+        "Showing the first " +
+          capped.length +
+          " of " +
+          rows.length +
+          ". Narrow the filters or search by name to see the rest."
+      );
+      els.iresults.appendChild(more);
+    }
   }
 
-  function selectTag(id) {
-    currentTag = id;
+  function showBrowse() {
     currentItem = null;
     setMode("item");
-    els.iq.value = "";
-    itemCombo.sync();
     els.itemProfile.hidden = true;
     els.itemProfile.innerHTML = "";
-
-    els.tagHeader.hidden = false;
-    els.tagHeader.innerHTML = "";
-    els.tagHeader.appendChild(el("span", "tag-header-label", "Items tagged"));
-    els.tagHeader.appendChild(el("span", "tag tag-fav", tagName(id)));
-    var clear = linkish("Clear", "link", function () {
-      currentTag = null;
-      els.tagHeader.hidden = true;
-      els.icontrols.hidden = true;
-      els.iresults.innerHTML = "";
-      els.iempty.hidden = false;
-      writeHash();
-    });
-    els.tagHeader.appendChild(clear);
-
-    els.icontrols.hidden = false;
-    els.habitatField.hidden = true;
-    els.iminhitsField.hidden = true;
-    els.itemcatField.hidden = false;
+    els.browseFilters.hidden = false;
+    els.detailFilters.hidden = true;
     els.iempty.hidden = true;
-    renderTagResults();
+    renderBrowse();
     writeHash();
   }
 
-  var itemCombo = combobox(
+  /** Clicking a tag anywhere lands here: browse mode with that tag applied. */
+  function selectTag(id) {
+    els.tagFilter.value = id;
+    els.iq.value = "";
+    itemCombo.sync();
+    showBrowse();
+  }
+
+  itemCombo = combobox(
     els.iq,
     els.isuggestions,
     els.iqclear,
@@ -835,7 +880,7 @@
       return search(db.items, value);
     },
     function (li, item) {
-      var img = image(item.iconUrl, "suggestion-sprite");
+      var img = itemIcon(item, "suggestion-sprite");
       if (img) li.appendChild(img);
       li.appendChild(el("span", null, item.name));
       li.appendChild(el("span", "cat", item.category));
@@ -849,8 +894,26 @@
     });
   });
 
-  els.itemcat.addEventListener("change", function () {
-    if (currentTag) renderTagResults();
+  [els.tagFilter, els.itemcat].forEach(function (control) {
+    control.addEventListener("change", function () {
+      if (currentItem) showBrowse();
+      else renderBrowse();
+      writeHash();
+    });
+  });
+
+  els.browseReset.addEventListener("click", function () {
+    els.tagFilter.value = "";
+    els.itemcat.value = "";
+    resetChecks(els.bUseChecks);
+    renderBrowse();
+    writeHash();
+  });
+
+  els.backToBrowse.addEventListener("click", function () {
+    els.iq.value = "";
+    itemCombo.sync();
+    showBrowse();
   });
 
   // ----------------------------------------------------------------- tabs
@@ -873,7 +936,8 @@
     setMode("pokemon");
   });
   els.tabItem.addEventListener("click", function () {
-    setMode("item");
+    if (currentItem) setMode("item");
+    else showBrowse();
   });
 
   // ----------------------------------------------------------------- hash
@@ -884,8 +948,8 @@
     if (applyingHash) return;
     var hash;
     if (mode === "item") {
-      if (currentTag) hash = "tag/" + encodeURIComponent(currentTag);
-      else if (currentItem) hash = "item/" + encodeURIComponent(currentItem.id);
+      if (currentItem) hash = "item/" + encodeURIComponent(currentItem.id);
+      else if (els.tagFilter.value) hash = "tag/" + encodeURIComponent(els.tagFilter.value);
       else hash = "item";
     } else {
       hash = house
@@ -907,8 +971,7 @@
       var tagId = decodeURIComponent(raw.slice("tag/".length));
       applyingHash = false;
       if (db.tagById[tagId]) return selectTag(tagId);
-      setMode("item");
-      return;
+      return showBrowse();
     }
 
     if (raw.indexOf("item") === 0) {
@@ -918,8 +981,7 @@
       })[0];
       applyingHash = false;
       if (found) return selectItem(found);
-      setMode("item");
-      return;
+      return showBrowse();
     }
 
     setMode("pokemon");

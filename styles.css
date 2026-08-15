@@ -186,19 +186,20 @@ main, .topbar, .footer { max-width: 1080px; margin: 0 auto; padding: 0 12px; }
 }
 .remove:hover { color: #d9534f; border-color: #d9534f; }
 
-/* -------------------------------------------------------- tag browsing */
+/* --------------------------------------------------- filter reset button */
 
-.tag-header {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 10px;
+.reset {
+  align-self: flex-end;
+  font: inherit;
+  font-size: 11px;
+  padding: 4px 10px;
+  color: var(--muted);
   background: var(--card);
   border: 1px solid var(--line);
-  border-radius: var(--radius);
+  border-radius: 999px;
+  cursor: pointer;
 }
-.tag-header-label { color: var(--muted); font-size: 12px; }
+.reset:hover { color: var(--ink); border-color: var(--muted); }
 
 /* ----------------------------------------------------------- controls */
 
@@ -321,6 +322,11 @@ button.tag-link:hover { text-decoration: underline; }
 }
 .cat + .cat { margin-left: 3px; }
 .cat-dlc { color: var(--accent); border-color: var(--accent); }
+.cat-event { color: #b45309; border-color: #b45309; }
+
+@media (prefers-color-scheme: dark) {
+  .cat-event { color: #f2b765; border-color: #f2b765; }
+}
 
 .cat-use { color: var(--ink); border-color: currentColor; font-weight: 600; }
 .use-relaxation { color: #7a5af0; }
@@ -360,6 +366,14 @@ button.tag-link:hover { text-decoration: underline; }
   border-radius: 999px;
 }
 .tag-hit, .tag-fav { color: var(--hit); background: var(--hit-bg); font-weight: 600; }
+/* a tag the item has but this Pokemon does not care about.
+   button.tag-link zeroes the border, so this has to out-specify it. */
+.tag-miss, button.tag-miss {
+  color: var(--muted);
+  background: none;
+  border: 1px dashed var(--line);
+  padding: 0 6px;
+}
 .tag-none { font-style: italic; }
 
 .empty { color: var(--muted); font-size: 12px; }

@@ -7,8 +7,9 @@ Add up to 4 Pokemon to share a house and the ranking switches to roommates:
 items that suit the most residents come first, then the ones with the most
 total hits. Each card shows who likes it and why.
 
-The **By item** tab runs it backwards: pick an item and see which Pokemon like
-it, ranked by how many of their six favorites it covers.
+The **By item** tab runs it backwards: browse every item by tag, category and
+use, or pick one to see which Pokemon like it, ranked by how many of their six
+favorites it covers.
 
 A static site: plain HTML, CSS, and JavaScript reading pre-built JSON files.
 No backend, no build step, no dependencies.
@@ -31,8 +32,8 @@ To publish: push to `main` and enable GitHub Pages on `main` / root.
 | File | |
 | --- | --- |
 | `index.html`, `app.js`, `styles.css` | the whole app |
-| `data/items.json` | 1681 items: name, category, use, tags, icon |
-| `data/pokemon.json` | 366 Pokemon: favorites, sprite, ideal habitat |
+| `data/items.json` | 1712 items: name, category, use, tags, icon |
+| `data/pokemon.json` | 368 Pokemon: favorites, sprite, ideal habitat |
 | `data/tags.json` | the 48 favorite tags |
 
 The data was compiled from [pokopia.gamertw.com](https://pokopia.gamertw.com/item),

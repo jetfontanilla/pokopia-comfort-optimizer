@@ -72,7 +72,7 @@
         </select>
       </label>
       <label class="check">
-        <input id="matchedonly" type="checkbox" checked />
+        <input id="matchedonly" type="checkbox" />
         <span>Only matched tags</span>
       </label>
       </div>
@@ -84,7 +84,7 @@
 
   <!-- ------------------------------------------------ item -> Pokemon -->
   <section id="panel-item" role="tabpanel" aria-labelledby="tab-item" hidden>
-    <p class="mode-hint">Pick an item to see which Pokemon like it, or click any tag to browse every item carrying it.</p>
+    <p class="mode-hint">Browse every item with the filters below, or pick one to see which Pokemon like it.</p>
 
     <div class="search" role="search">
       <div class="combo">
@@ -104,33 +104,50 @@
     </div>
 
     <div id="itemprofile" class="profile" hidden></div>
-    <div id="tagheader" class="tag-header" hidden></div>
 
-    <details id="icontrols" class="filters" hidden>
+    <!-- browsing every item, filtered -->
+    <details id="browsefilters" class="filters">
+      <summary>Filters <span id="bcount" class="count"></span></summary>
+      <div class="controls">
+        <label class="field">
+          <span>Tag</span>
+          <select id="tagfilter"><option value="">Any</option></select>
+        </label>
+        <label class="field">
+          <span>Category</span>
+          <select id="itemcat"><option value="">All</option></select>
+        </label>
+        <div class="field">
+          <span>Use</span>
+          <div id="busechecks" class="checks"></div>
+        </div>
+        <button id="browsereset" class="reset" type="button">Reset filters</button>
+      </div>
+    </details>
+
+    <!-- one item picked: which Pokemon want it -->
+    <details id="detailfilters" class="filters" hidden>
       <summary>Filters <span id="icount" class="count"></span></summary>
       <div class="controls">
-      <label class="field" id="habitatfield">
-        <span>Ideal habitat</span>
-        <select id="habitat"><option value="">All</option></select>
-      </label>
-      <label class="field" id="iminhitsfield">
-        <span>Min. hits</span>
-        <select id="iminhits">
-          <option value="1">1+</option>
-          <option value="2">2+</option>
-          <option value="3">3+</option>
-          <option value="4">4+</option>
-        </select>
-      </label>
-      <label class="field" id="itemcatfield" hidden>
-        <span>Category</span>
-        <select id="itemcat"><option value="">All</option></select>
-      </label>
+        <label class="field">
+          <span>Ideal habitat</span>
+          <select id="habitat"><option value="">All</option></select>
+        </label>
+        <label class="field">
+          <span>Min. hits</span>
+          <select id="iminhits">
+            <option value="1">1+</option>
+            <option value="2">2+</option>
+            <option value="3">3+</option>
+            <option value="4">4+</option>
+          </select>
+        </label>
+        <button id="backtobrowse" class="reset" type="button">Back to all items</button>
       </div>
     </details>
 
     <div id="iresults" class="results" aria-live="polite"></div>
-    <p id="iempty" class="empty">Start typing an item name above.</p>
+    <p id="iempty" class="empty" hidden></p>
   </section>
 </main>
 
