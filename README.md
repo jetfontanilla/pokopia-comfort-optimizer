@@ -14,9 +14,11 @@ favorites it covers.
 A static site: plain HTML, CSS, and JavaScript reading pre-built JSON files.
 No backend, no build step, no dependencies.
 
+**Live at <https://jetfontanilla.github.io/pokopia-comfort-optimizer/>**
+
 ## Use it
 
-Serve the folder over HTTP and open it:
+To run it locally, serve the folder over HTTP and open it:
 
 ```bash
 python -m http.server 8765
@@ -25,7 +27,7 @@ python -m http.server 8765
 (Opening `index.html` directly off disk won't work, because the browser blocks
 the JSON files over `file://`.)
 
-To publish: push to `main` and enable GitHub Pages on `main` / root.
+It deploys from GitHub Pages on `main` / root, so pushing to `main` publishes it.
 
 ## What's in it
 
